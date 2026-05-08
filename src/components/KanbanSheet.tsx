@@ -46,7 +46,12 @@ function KanbanSheet({ item, fetchItems, open, onOpenChange }: KanbanSheetProps)
             </SheetDescription>
           </div>
         </SheetHeader>
-        <KanbanItem item={item} onSave={handleSave} onCancel={handleCancel} />
+        <KanbanItem
+          key={`${item?.id ?? 'new'}-${open ? 'open' : 'closed'}`}
+          item={item}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
       </SheetContent>
     </Sheet>
   );

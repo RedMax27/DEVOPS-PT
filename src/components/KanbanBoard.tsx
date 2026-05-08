@@ -5,6 +5,20 @@ import { toast } from "sonner";
 import KanbanItemCard from './KanbanItemCard';
 import KanbanSheet from './KanbanSheet'; // Import the new component
 
+const ITEMS_API_URL = 'https://hb-kanban-backend.hb-user.workers.dev/items';
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Unknown error';
+
+const loadItems = async (): Promise<Item[]> => {
+  const response = await fetch(ITEMS_API_URL);
+  if (!response.ok) {
+    throw new Error(`Error: ${response.status}`);
+  }
+
+  return response.json() as Promise<Item[]>;
+};
+
 function KanbanBoard() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,14 +27,11 @@ function KanbanBoard() {
 
   const fetchItems = async () => {
     try {
-      const response = await fetch('https://hb-kanban-backend.hb-user.workers.dev/items');
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      const data: Item[] = await response.json();
+      const data = await loadItems();
       setItems(data);
-    } catch (err: any) {
-      setError(err.message);
+      setError(null);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
       toast("The items have been loaded successfully");
@@ -28,7 +39,27 @@ function KanbanBoard() {
   };
 
   useEffect(() => {
-    fetchItems();
+    let mounted = true;
+
+    void loadItems()
+      .then((data) => {
+        if (!mounted) return;
+        setItems(data);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!mounted) return;
+        setError(getErrorMessage(err));
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+        toast("The items have been loaded successfully");
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -108,7 +139,7 @@ function KanbanBoard() {
     ));
 
     try {
-      const response = await fetch(`https://hb-kanban-backend.hb-user.workers.dev/items/${itemId}`, {
+      const response = await fetch(`${ITEMS_API_URL}/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -123,9 +154,9 @@ function KanbanBoard() {
       toast.success(`Item ${itemId} moved to ${newState}`);
       fetchItems(); // Reload items to ensure consistency
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating item state:', error);
-      toast.error(`Failed to move item ${itemId}: ${error.message}`);
+      toast.error(`Failed to move item ${itemId}: ${getErrorMessage(error)}`);
       // Revert state on error
       setItems(items.map(item =>
         item.id === parseInt(itemId, 10) ? { ...item, state: originalState } : item

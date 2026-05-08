@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -25,42 +25,18 @@ interface KanbanItemProps {
   onCancel: () => void;
 }
 
-function KanbanItem({ item, onSave, onCancel }: KanbanItemProps) {
-  const [itemData, setItemData] = useState<ItemData>({
-    title: '',
-    description: '',
-    type: 'User Story', // Default value
-    estimate: 1, // Default value
-    state: 'Open', // Default value
-    assigned_user: '',
-    priority: 'Low', // Default value
-  });
+const getInitialItemData = (item?: Item): ItemData => ({
+  title: item?.title ?? '',
+  description: item?.description ?? '',
+  type: item?.type ?? 'User Story',
+  estimate: item?.estimate ?? 1,
+  state: item?.state ?? 'Open',
+  assigned_user: item?.assigned_user ?? '',
+  priority: item?.priority ?? 'Low',
+});
 
-  useEffect(() => {
-    if (item) {
-      // Populate form fields if item prop is provided (editing)
-      setItemData({
-        title: item.title,
-        description: item.description,
-        type: item.type,
-        estimate: item.estimate,
-        state: item.state,
-        assigned_user: item.assigned_user,
-        priority: item.priority,
-      });
-    } else {
-      // Clear form fields if no item prop (creating new)
-      setItemData({
-        title: '',
-        description: '',
-        type: 'User Story',
-        estimate: 1,
-        state: 'Open',
-        assigned_user: '',
-        priority: 'Low',
-      });
-    }
-  }, [item]);
+function KanbanItem({ item, onSave, onCancel }: KanbanItemProps) {
+  const [itemData, setItemData] = useState<ItemData>(() => getInitialItemData(item));
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
